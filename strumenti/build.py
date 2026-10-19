@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Costruisce la copia pubblica di Gmdb (sola lettura) per Cloudflare Pages.
+"""Costruisce la copia pubblica di Gmdb (sola lettura) per GitHub Pages.
 
 Uso: python3 build.py <pagina_artifact.html> <cartella_export_db> <cartella_uscita>
 - pagina_artifact.html: la pagina Gmdb letta da claude.ai (index.html dell'artifact)
