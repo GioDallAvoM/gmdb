@@ -186,21 +186,25 @@ a.ev:hover{outline:2px solid var(--ink)}
 
 /* guardalo ora (riquadri come i voti esterni) e DVD */
 .watch,.buys{display:flex;flex-direction:column;gap:12px}
+.watch{container-type:inline-size}
 .wstate{margin:0;font-style:italic;color:var(--muted)}
 .wg .label{display:block;margin-bottom:6px}
 .wpswrap{container-type:inline-size}
 .wps{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:clamp(4px,1.6cqi,10px)}
-.wp{background:var(--tile);border-top:5px solid var(--red);padding:clamp(6px,2cqi,12px) clamp(3px,1.2cqi,8px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;gap:clamp(2px,.9cqi,5px);min-width:0;color:inherit;text-decoration:none}
+.wp{background:var(--tile);border-top:5px solid var(--red);padding:clamp(6px,calc(2cqi*6/var(--n)),12px) clamp(3px,calc(1.2cqi*6/var(--n)),8px);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;gap:clamp(2px,calc(.9cqi*6/var(--n)),5px);min-width:0;color:inherit;text-decoration:none}
 a.wp:hover{outline:2px solid var(--ink)}
-.wp .lg{width:clamp(24px,8cqi,46px);aspect-ratio:1;display:block}
+.wp .lg{width:clamp(24px,calc(8cqi*6/var(--n)),46px);aspect-ratio:1;display:block}
 .wp .lg img,.wp .lg svg{width:100%;height:100%;display:block;border-radius:22%}
 .wp .lg svg{border-radius:0}
-.wp .pn{font-size:clamp(9px,2.3cqi,12px);line-height:1.15;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
-.wp .pr{font-family:var(--f-display);font-weight:600;font-size:clamp(13px,4.2cqi,22px);line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
-.wp .qt{font-family:var(--f-mono);font-size:clamp(8px,2.1cqi,11px);color:var(--muted);line-height:1.2;overflow-wrap:anywhere}
+.wp .pn{font-size:clamp(9px,calc(2.3cqi*6/var(--n)),12px);line-height:1.15;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.wp .pr{font-family:var(--f-display);font-weight:600;font-size:clamp(13px,calc(4.2cqi*6/var(--n)),22px);line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wp .qt{font-family:var(--f-mono);font-size:clamp(8px,calc(2.1cqi*6/var(--n)),11px);color:var(--muted);line-height:1.2;overflow-wrap:anywhere}
 .wp .qt:empty{display:none}
 .wfoot{margin:0;font-family:var(--f-mono);font-size:13px;color:var(--muted)}
 .wfoot a{color:var(--red);text-underline-offset:3px}
+.wpair{display:grid;gap:clamp(10px,2.4vw,18px);align-items:start}
+.wpair .wg{min-width:0}
+@container (max-width:600px){ .wpair{grid-template-columns:1fr !important} }
 
 /* voti per categoria e modifica */
 .cats{border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)}
@@ -538,7 +542,7 @@ const YTF = {};
 // Guardalo ora: dove si vede ogni titolo in Italia (abbonamento, gratis, noleggio, acquisto) con i prezzi.
 // Dati raccolti da JustWatch titolo per titolo, abbinati per ID IMDb, e salvati qui con la data della raccolta.
 // YouTube: solo film completi pubblicati da canali verificati, con durata compatibile.
-const WATCH_GROUPS = [["F","In abbonamento"],["G","Gratis"],["R","A noleggio"],["B","Da acquistare"]];
+const WATCH_GROUPS = [["F","In abbonamento"],["G","Gratis"],["R","Noleggia"],["B","Acquista"]];
 const WQ = ["","SD","HD","4K"];
 function jwURL(f){ const w=WATCH[f.id]; return w&&w.u ? "https://www.justwatch.com"+w.u : "https://www.justwatch.com/it/cerca?q="+encodeURIComponent(f.t); }
 function ytSearchURL(f){ return "https://www.youtube.com/results?search_query="+encodeURIComponent(`${f.t}${f.y?" "+f.y:""} film completo`); }
@@ -561,15 +565,18 @@ function watchOffers(f){
 }
 function watchHTML(f){
   const o=watchOffers(f), link=jwURL(f);
-  const groups=WATCH_GROUPS.filter(([k])=>o[k]).map(([k,l])=>{
+  const box={};
+  WATCH_GROUPS.filter(([k])=>o[k]).forEach(([k,l])=>{
     const tiles=o[k].map(x=>{
       if(x.yt) return `<a class="wp" href="https://www.youtube.com/watch?v=${esc(x.yt)}" target="_blank" rel="noopener" title="Film completo su YouTube · ${esc(x.ch)}"><span class="lg">${YT_LOGO}</span><span class="pn">YouTube</span><span class="pr">Gratis</span><span class="qt">${esc(x.ch)}</span></a>`;
       const [name,img]=WPK[x.n];
       const price = x.p!=null ? eur(x.p) : k==="F" ? "Incluso" : "Gratis";
       return `<a class="wp" href="${esc(link)}" target="_blank" rel="noopener" title="${esc(name)}"><span class="lg"><img src="${img}" alt=""></span><span class="pn">${esc(name)}</span><span class="pr">${price}</span><span class="qt">${[WQ[x.q]||"",x.tag||""].filter(Boolean).join(" · ")}</span></a>`;
     }).join("");
-    return `<div class="wg"><span class="label">${l}</span><div class="wpswrap"><div class="wps" style="--n:${Math.min(Math.max(o[k].length,4),6)}">${tiles}</div></div></div>`;
+    const pair=(k==="R"||k==="B")&&o.R&&o.B;
+    box[k]=`<div class="wg"><span class="label">${l}</span><div class="wpswrap"><div class="wps" style="--n:${pair?o[k].length:Math.min(Math.max(o[k].length,4),6)}">${tiles}</div></div></div>`;
   });
+  const groups=[box.F,box.G, box.R&&box.B?`<div class="wpair" style="grid-template-columns:${o.R.length}fr ${o.B.length}fr">${box.R}${box.B}</div>`:(box.R||box.B)].filter(Boolean);
   return `<div class="watch">
       ${groups.length?groups.join(""):`<p class="wstate">Al momento non risulta disponibile online in Italia.</p>`}
       <p class="wfoot">${WATCH[f.id]?`Aggiornato al ${dataIT(WATCH_DATE)} · `:""}<a href="${esc(link)}" target="_blank" rel="noopener">${WATCH[f.id]?"Verifica prezzi e offerte su JustWatch":"Cerca su JustWatch"} ↗</a> · <a href="${ytSearchURL(f)}" target="_blank" rel="noopener">Cerca su YouTube ↗</a></p>
